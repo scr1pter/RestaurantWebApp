@@ -1,0 +1,336 @@
+﻿@model Tuple<IEnumerable<SelectListItem>, IEnumerable<SelectListItem>, IEnumerable<SelectListItem>>
+
+@{
+    ViewBag.Title = "Index";
+}
+
+    <style>
+    body {
+        background-image: url('/Content/images/4.jpg');
+    }
+    fieldset {
+        border: 1px solid #ddd !important;
+        border-radius: 6px;
+        background-color: aliceblue;
+        font-family: Verdana, Geneva, Tahoma, sans-serif;
+    }
+
+    legend {
+        text-align: center;
+        border: 1px solid #ddd !important;
+        border-radius: 5px;
+        background-color: steelblue;
+    }
+    @*τα 3 παρακατω ειναι ετοιμα απο stackoverflow για τοποθετηση του modal στο κεντρο της οθονης
+    .modal {
+        text-align: center;
+        padding: 0 !important;
+    }
+
+    .modal:before {
+         content: '';
+         display: inline-block;
+         height: 100%;
+         vertical-align: middle;
+         margin-right: -4px;
+    }
+
+    .modal-dialog {
+        display: inline-block;
+        text-align: left;
+        vertical-align: middle;
+    }
+    *@
+
+    </style>
+
+<fieldset>
+    <legend>
+        Restaurant
+    </legend>
+    <div class="container">
+        <div class="row">
+            <div class="col-md-4">
+                <div class="form-group">
+                    Customer :
+                    @Html.DropDownList("Customer", new SelectList(Model.Item1, dataValueField: "Value", dataTextField: "Text"), new { @class = "form-control" })
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-group">
+                    Payment Type :
+                    @Html.DropDownList("PaymentType", new SelectList(Model.Item3, dataValueField: "Value", dataTextField: "Text"), new { @class = "form-control" })
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-group">
+                    Total :
+                    <input type="text" style="margin-top:1px;" class="form-control" id="FinalTotal" readonly="readonly" value="0.0$" name="finaltotal" />
+                </div>
+            </div>
+        </div>
+    </div>
+</fieldset>
+
+<fieldset>
+    <legend>
+        Menu
+    </legend>
+    <div class="container">
+        <div class="row">
+            <div class="col-md-4">
+                <div class="form-group">
+                    Item :
+                    @Html.DropDownList("Item", new SelectList(Model.Item2, dataValueField: "Value", dataTextField: "Text"), new { @class = "form-control" })
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-group">
+                    Price Per Unit :
+                    <input type="text" style="margin-top:2px;" class="form-control" id="Price" readonly="readonly" value="0.5$" name="PricePerUnit" />
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-group">
+                    Quantity :
+                    <input type="text" style="margin-top:3px;" class="form-control" id="Quantity" value="0" name="quantity" />
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-4">
+                <div class="form-group">
+                    Total :
+                    <input type="text" style="margin-top:1px;" class="form-control" id="Total" readonly="readonly" value="0.0$" name="total" />
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-group">
+                    <input type="button" style="margin-top:22px;" class="btn btn-success" id="AddToOrder" value="Add To Order" name="addToOrder" />
+                </div>
+            </div>
+        </div>
+    </div>
+</fieldset>
+
+<fieldset>
+    <legend>
+        Order Information
+    </legend>
+    <table style="width: 100%;" id="table">
+        <thead>
+            <tr>
+                <th hidden>
+                    Item Id
+                </th>
+                <th>
+                    Item Name
+                </th>
+                <th>
+                    Price Per Unit
+                </th>
+                <th>
+                    Quantity
+                </th>
+                <th>
+                    Total
+                </th>
+                <th>
+                    Action
+                </th>
+            </tr>
+        </thead>
+    </table>
+</fieldset>
+
+<div style="margin-top:20px;">
+    <input data-toggle="modal" data-target="#divPayment" type="button" value="Checkout" name="checkout" id="Checkout" class="btn btn-primary pull-right" />
+</div>
+
+<div id="divPayment" class="modal fade" role="dialog">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+                <h5 class="modal-title">Payment</h5>
+            </div>
+            <div class="modal-body">
+                    <div class="row">
+                        <div class="form-group col-sm-6">
+                            Order Total :
+                            <input type="text" id="OrderTotal" readonly="readonly" value="0.0$" class="form-control"/>
+                        </div>
+                        <div class="form-group col-sm-6">
+                            Payment Amount :
+                            <input type="text" id="PaymentAmount" value="0.0$" class="form-control"/>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="form-group col-sm-6">
+                            Balance Amount :
+                            <input type="text" id="BalanceAmount" readonly="readonly" value="0.0$" class="form-control"/>
+                        </div>
+                    </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-success" id="btnPayment" value="Payment">Payment</button>
+                <button class="btn btn-danger" id="btnClose" data-dismiss="modal" value="close">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="~/Scripts/jquery-3.4.1.min.js"></script>
+
+<script type="text/javascript">
+    // χειρισμος των ενεργειων του χρηστη, οταν αλλαζει ποσοτητα, παταει κουμπια κλπ
+    $(document).ready(function () {
+        $("#Item").change(function () {
+            var itemId = $("#Item").val();
+            GetItemPricePerUnit(itemId);
+            $('#Total').val('0.0$');
+            $('#Quantity').val('0');
+        });
+
+        $('#Quantity').change(function () {
+            CalculateTotalOrderPrice();
+        });
+
+        $('#AddToOrder').click(function () {
+            if (parseInt($('#Quantity').val()) > 0) {
+                AddToTheOrder();
+
+                var previousTotal = $('#FinalTotal').val();
+                var itemTotal = $('#Total').val();
+                var finaltotal = parseFloat(previousTotal) + parseFloat(itemTotal);
+                $('#FinalTotal').val(finaltotal.toFixed(1) + '$');
+
+                $('#OrderTotal').val(finaltotal.toFixed(1) + '$');
+                $('#BalanceAmount').val(finaltotal.toFixed(1) + '$');
+            }
+        })
+
+        $('#PaymentAmount').change(function () {
+            var ordertotal = $('#OrderTotal').val();
+            var paymentamount = $('#PaymentAmount').val();
+            var balance = parseFloat(paymentamount) - parseFloat(ordertotal);
+            $('#BalanceAmount').val(balance.toFixed(1) + '$');
+        });
+
+        $('#btnPayment').click(function () {
+
+            var ordertotal = $('#OrderTotal').val();
+            var paymentamount = $('#PaymentAmount').val();
+            var balance = parseFloat(paymentamount) - parseFloat(ordertotal);
+            $('#BalanceAmount').val(balance.toFixed(1) + '$');
+
+            if (parseFloat(ordertotal) > 0) {
+                if (balance >= 0) {
+                    FinalPayment();
+                }
+                else {
+                    alert("The payment is insufficient for the order!")
+                }
+            }
+        })
+
+        $('#Customer').change(function () {
+            $('#FinalTotal').val('0.0$');
+            $('#Total').val('0.0$');
+            $('#Quantity').val(0);
+            $('td').remove();
+        });
+    });
+
+    // οταν επιλεγω item μου δινει την τιμη του ανα μοναδα
+    function GetItemPricePerUnit(itemId) {
+        $.ajax({
+            type: 'GET',
+            dataType: 'JSON',
+            contentType: 'application/json; charset=utf-8',
+            data: { itemId: itemId },
+            url: '/Home/GetItemPricePerUnit',
+            success: function (data) {
+                $('#Price').val(parseFloat(data).toFixed(1) + '$');
+            },
+            error: function () {
+                alert("There was a problem fetching the price per unit. Please try again...")
+            }
+        });
+    }
+
+    //ενημερωνει το συνολο για καθε item που παω να προσθεσω στην παραγγελια
+    function CalculateTotalOrderPrice() {
+        var itemPrice = $("#Price").val();
+        var quantity = $('#Quantity').val();
+
+        if (quantity > 0) {
+            var total = parseFloat(itemPrice) * quantity;
+            $('#Total').val(parseFloat(total).toFixed(1) + '$');
+        }
+    }
+
+    //δημιουργω τις γραμμες του πινακα οταν προσθετω καποιο item στην παραγγελια
+    function AddToTheOrder() {
+        var itemPrice = $("#Price").val();
+        var quantity = $('#Quantity').val();
+        var itemId = $("#Item").val();
+        var itemName = $("#Item option:selected").text();
+        var total = parseFloat(itemPrice) * quantity;
+
+        var OrderItem = "<tr><td hidden='hidden'>" + itemId +
+            "</td><td>" + itemName +
+            "</td><td>" + itemPrice +
+            "</td><td>" + quantity +
+            "</td><td>" + parseFloat(total).toFixed(1) + "$" +
+            "</td><td> <input type='button' value='Delete' name='delete' class='btn btn-danger' onclick='DeleteRow(this)'/> </td></tr>";
+
+        $('#table').append(OrderItem);
+    }
+
+    //διαγραφω καποια γραμμη του πινακα απο την παραγγελια, ανανεωνεται αντιστοιχα και το συνολο για τον πελατη
+    function DeleteRow(item) {
+        var previousTotal = $('#FinalTotal').val();
+        var itemTotal = parseFloat($(item).closest('tr').find("td:eq(4)").text()); //βρισκει ποια γραμμη παω να διαγραψω και παιρνω το total αυτης της γραμμης ωστε να το αφαιρεσω απο το finaltotal του πελατη για να ενημερωθει και στο view
+        var finaltotal = parseFloat(previousTotal) - parseFloat(itemTotal);
+        $('#FinalTotal').val(finaltotal.toFixed(1) + '$');
+
+        $(item).closest('tr').remove();
+    }
+
+    // οταν πατησω το τελικο κουμπι για την πληρωμη εκχωρουνται οι τιμες στα αντικειμενα Order και OrderDetails ωστε να περαστουν στον controller και επειτα να γινει η αποθηκευση της παραγγελιας στη βαση
+    function FinalPayment() {
+        var objOrderViewModel = {};
+        var ListOfOrderDetailViewModel = new Array(); //ListOfOrderDetailViewModel
+
+        objOrderViewModel.PaymentTypeId = $('#PaymentType').val();
+        objOrderViewModel.CustomerId = $('#Customer').val();
+        objOrderViewModel.FinalTotal = parseFloat($('#FinalTotal').val()).toFixed(1);
+
+        $('#table').find("tr:gt(0)").each(function () {
+            var objOrderDetailViewModel = {};
+            objOrderDetailViewModel.Total = parseFloat($(this).find("td:eq(4)").text());
+            objOrderDetailViewModel.ItemId = parseFloat($(this).find("td:eq(0)").text());
+            objOrderDetailViewModel.PricePerUnit = parseFloat($(this).find("td:eq(2)").text());
+            objOrderDetailViewModel.Quantity = parseFloat($(this).find("td:eq(3)").text());
+            ListOfOrderDetailViewModel.push(objOrderDetailViewModel);
+        });
+        objOrderViewModel.ListOfOrderDetailViewModel = ListOfOrderDetailViewModel;
+
+        $.ajax({
+            type: 'POST',
+            dataType: 'JSON',
+            contentType: 'application/json; charset=utf-8',
+            data: JSON.stringify(objOrderViewModel),
+            url: '/Home/InsertToDB',
+            success: function (data) {
+                alert(data);
+            },
+            error: function () {
+                alert("There was a problem adding the data. Please try again...")
+            }
+        });
+    }
+
+</script>
